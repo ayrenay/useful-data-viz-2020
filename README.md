@@ -5,4 +5,5 @@ Data visualization is as much of a design and narrative challenge as it is a ref
 A talk created for https://chicago2020.satrdays.org/
 
 Data set sourced from Chicago Data Portal: 
+
 https://data.cityofchicago.org/dataset/Libraries-2019-Circulation-by-Location/8rsv-tvu9
