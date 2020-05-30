@@ -1,0 +1,164 @@
+---
+title: "Examples for 2020 SatRdays Chicago"
+output: html_notebook
+---
+## Import packages
+```{r}
+library(tidyverse)
+library(gt)
+```
+
+## Import data
+```{r}
+chicago_library_circulation_2019 <- read_csv('Libraries_-_2019_Circulation_by_Location.csv')
+# https://data.cityofchicago.org/dataset/Libraries-2019-Circulation-by-Location/8rsv-tvu9
+
+colnames(chicago_library_circulation_2019) <- tolower(colnames(chicago_library_circulation_2019))
+```
+
+## Examine data
+```{r}
+head(chicago_library_circulation_2019)
+summary(chicago_library_circulation_2019)
+```
+
+## Default settings
+What are the opportunities?
+```{r, fig.height=10}
+ggplot(chicago_library_circulation_2019) +
+  geom_bar(aes(y = location, weight = ytd)) +
+  labs(title="2019 Chicago Library Circulation"
+       , subtitle="Source: Chicago Data Portal")
+```
+
+## Build understanding with order
+An easy first step is to sort data
+```{r, fig.height=10}
+chicago_library_circulation_2019 %>% 
+  mutate(location = fct_reorder(location,ytd)) %>% 
+ggplot() +
+  geom_bar(aes(y = location, weight = ytd)) +
+  labs(title="2019 Chicago Library Circulation"
+       , subtitle="Source: Chicago Data Portal")
+```
+
+## Minimize distractions with filtering
+Assuming that the ideal scenario is understanding locations with the highest circulation, there's no need to show _all_ of the rows in the data set.
+
+In your own work, you would draw on the needs of the request that was made to you, your organization's goals, or your knowledge of the audience's perspective to decide what to call attention to.
+```{r}
+chicago_library_circulation_2019 %>% 
+  mutate(location = fct_reorder(location,ytd)) %>% 
+  arrange(desc(ytd)) %>%
+  slice_head(n = 20) %>% 
+ggplot() +
+  geom_bar(aes(y = location, weight = ytd)) +
+  labs(title="2019 Chicago Library Circulation"
+       , subtitle="Source: Chicago Data Portal")
+```
+
+
+## Minimize distractions by adjusting gridlines
+```{r}
+chicago_library_circulation_2019 %>% 
+  mutate(location = fct_reorder(location,ytd)) %>% 
+  arrange(desc(ytd)) %>%
+  slice_head(n = 20) %>% 
+ggplot() +
+  geom_bar(aes(y = location, weight = ytd)) +
+  labs(title="2019 Chicago Library Circulation"
+       , subtitle="Source: Chicago Data Portal") +
+  scale_x_continuous(expand = c(0, 0)) +
+  theme_minimal() +
+  theme(panel.grid.major.y = element_blank()
+        , panel.grid.minor.y = element_blank()
+        , axis.line.y = element_line(size = 1, color = 'grey')
+        )
+```
+
+## Build understanding + minimize distractions by adjusting the axis titles and labels
+```{r}
+chicago_library_circulation_2019 %>% 
+  mutate(
+    location = str_to_title(location)
+    , location = fct_reorder(location,ytd)
+    ) %>% 
+  arrange(desc(ytd)) %>%
+  slice_head(n = 20) %>% 
+ggplot() +
+  geom_bar(aes(y = location, weight = ytd)) +
+  labs(title = "2019 Chicago Library Circulation by Location"
+       , caption = "Source: Chicago Data Portal"
+       , x = ""
+       , y = "") +
+  scale_x_continuous(labels = scales::unit_format(scale = 1e-6), expand = c(0,0)) +
+  theme_minimal() +
+  theme(panel.grid.major.y = element_blank()
+        , panel.grid.minor.y = element_blank()
+        , axis.line.y = element_line(size = 1, color = 'grey')
+        , axis.text.x = element_text(size = 10, color = 'grey')
+        , plot.caption = element_text(size = 8, color = 'grey')
+        , plot.title = element_text(size = 15, margin = margin(b = 10, unit = 'pt'), color = '#414141')
+        , plot.title.position = 'plot'
+        )
+```
+
+## Highlight takeaways by describing trends in the title
+```{r}
+(bar_chart <- 
+chicago_library_circulation_2019 %>% 
+  mutate(
+    location = str_to_title(location)
+    , location = fct_reorder(location,ytd)
+    ) %>% 
+  arrange(desc(ytd)) %>%
+  slice_head(n = 20) %>% 
+ggplot() +
+  geom_bar(aes(y = location, weight = ytd)) +
+  labs(title = "Online renewals and downloadable content accounted for the vast majority\nof library circulation totals in 2019"
+       , subtitle = "Top 20 locations by total circulation"
+       , caption = "Source: Chicago Data Portal"
+       , x = ""
+       , y = "") +
+  scale_x_continuous(labels = scales::unit_format(scale = 1e-6), expand = c(0,0)) +
+  theme_minimal() +
+  theme(panel.grid.major.y = element_blank()
+        , panel.grid.minor.y = element_blank()
+        , axis.line.y = element_line(size = 1, color = 'grey')
+        , axis.text.x = element_text(size = 10, color = 'grey')
+        , plot.caption = element_text(size = 8, color = 'grey')
+        , plot.title = element_text(size = 15, color = '#414141')
+        , plot.subtitle = element_text(color = 'darkGrey', margin = margin(b = 10, unit = 'pt'))
+        , plot.title.position = 'plot'
+        , plot.margin = margin(10, 20, 10, 20, unit = 'pt')
+        ))
+```
+
+
+## Build understanding with multiple graphs
+This is the point where you ask yourself: "What is volume really telling us?" There are many ways to highlight the top locations by circulation. If you don't have to choose, it can be useful to add an additional layer of information with a secondary graph
+```{r}
+chicago_library_circulation_2019 %>% 
+  arrange(desc(ytd)) %>%
+  transmute(
+    location = str_to_title(location)
+    , proportion = ytd / sum(ytd)
+    , location = fct_reorder(location,ytd)
+    ) %>%
+  slice_head(n = 20) %>%
+  
+gt() %>%
+  summary_rows(
+    columns = vars(proportion),
+    fns = list(
+       ~sum(.)),
+    formatter = fmt_percent,
+    use_seps = FALSE
+  ) %>% 
+  tab_header(
+    title = "The top 20 locations account for around 80% of total circulation"
+  ) %>% 
+  cols_align(align = 'left') %>%
+  cols_label(location = 'Location', proportion = 'Share of 2019 circulation') %>% 
+  fmt_percent(columns = vars(proportion), decimals = 1) 
+```
